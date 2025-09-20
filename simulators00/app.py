@@ -4,17 +4,10 @@ import time
 import random
 import math
 from datetime import datetime
-import paho.mqtt.client as mqtt
 
 class IoTSensorSimulator:
     def __init__(self):
-        # Conexión a Redis
         self.redis_client = redis.Redis(host='localhost', port=6379, decode_responses=True)
-        
-        # Configuración de MQTT
-        self.mqtt_client = mqtt.Client(protocol=mqtt.MQTTv311, userdata=None, transport="tcp")
-        self.mqtt_client.on_connect = self.on_mqtt_connect
-        self.mqtt_client.on_disconnect = self.on_mqtt_disconnect
         
         # Configuración de sensores
         self.sensors = {
@@ -26,7 +19,7 @@ class IoTSensorSimulator:
             'battery_level': {'min': 50, 'max': 100, 'unit': '%'}
         }
         
-        # Estados base para generar valores realistas
+        # Estados para simular patrones realistas
         self.base_values = {
             'temperature': 22,
             'humidity': 60,
@@ -36,34 +29,11 @@ class IoTSensorSimulator:
             'battery_level': 85
         }
         
-        print(" -Simulador de sensores IoT iniciado")
-        print(" - Conectado a Redis en localhost:6379")
-        
-        # Iniciar conexión MQTT
-        try:
-            self.mqtt_client.connect("localhost", 1883, 60)
-            self.mqtt_client.loop_start()
-            print(" - Conectado a MQTT broker en localhost:1883")
-        except Exception as e:
-            print(f" - Error al conectar con MQTT broker: {e}")
-    
-    def on_mqtt_connect(self, client, userdata, flags, rc):
-        if rc == 0:
-            print(" - Conexión MQTT establecida")
-        else:
-            print(f" - Error en conexión MQTT, código: {rc}")
-    
-    def on_mqtt_disconnect(self, client, userdata, rc):
-        print(f" - Desconectado de MQTT broker con código: {rc}")
-        if rc != 0:
-            print(" - Intentando reconectar a MQTT...")
-            try:
-                self.mqtt_client.reconnect()
-            except:
-                print(" - Reconexión fallida, reintentando más tarde")
+        print("✅ Simulador de sensores IoT iniciado")
+        print("📡 Conectado a Redis en localhost:6379")
 
     def generate_realistic_value(self, sensor_type, timestamp):
-        """Genera valores realistas"""
+        """Genera valores realistas que simulan patrones del mundo real"""
         base = self.base_values[sensor_type]
         config = self.sensors[sensor_type]
         
@@ -71,13 +41,13 @@ class IoTSensorSimulator:
         hour = datetime.fromtimestamp(timestamp).hour
         
         if sensor_type == 'temperature':
-            # Temperatura sigue un patrn diario
+            # Temperatura sigue un patrón diario
             daily_cycle = 5 * math.sin((hour - 6) * math.pi / 12)
-            noise = random.uniform(-7, 10)
+            noise = random.uniform(-4, 17)
             value = base + daily_cycle + noise
             
         elif sensor_type == 'light':
-            # Luminosidad alta durante el dia, baja en la noche
+            # Luminosidad alta durante el día, baja en la noche
             if 6 <= hour <= 18:
                 value = base + random.uniform(-100, 200)
             else:
@@ -89,20 +59,20 @@ class IoTSensorSimulator:
             value = base + temp_effect + random.uniform(-5, 5)
             
         elif sensor_type == 'battery_level':
-            # Bateria se descarga lentamente
+            # Batería se descarga lentamente
             self.base_values['battery_level'] -= random.uniform(0, 0.1)
             value = max(self.base_values['battery_level'], config['min'])
             
         else:
-            # Otros sensores con variacion random
+            # Otros sensores con variación aleatoria
             value = base + random.uniform(-5, 5)
         
-        # Verificar limites
+        # Asegurar que esté dentro de los límites
         value = max(config['min'], min(config['max'], value))
         return round(value, 2)
 
     def send_sensor_data(self):
-        """Envía datos de todos los sensores a Redis y MQTT"""
+        """Envía datos de todos los sensores a Redis"""
         timestamp = time.time()
         current_time = datetime.fromtimestamp(timestamp).isoformat()
         
@@ -116,38 +86,26 @@ class IoTSensorSimulator:
                 'sensor_type': sensor_type,
                 'value': value,
                 'unit': self.sensors[sensor_type]['unit'],
-                'device_id': 'device_001',
-                'location': 'India_02'
+                'device_id': 'raspberry_pi_001',
+                'location': 'Aula_101'
             }
             
-            # Datos para MQTT
-            mqtt_data = dict(sensor_data)
-            mqtt_data['protocol'] = 'mqtt'
+            # Guardar en Redis usando diferentes estructuras
             
-            # 1. Stream para datos en tiempo real (Redis - General)
+            # 1. Stream para datos en tiempo real
             stream_key = f'sensors:{sensor_type}:stream'
             self.redis_client.xadd(stream_key, sensor_data)
             
-            # 2. Hash para último valor (Redis - General)
+            # 2. Hash para último valor
             hash_key = f'sensors:{sensor_type}:latest'
             self.redis_client.hset(hash_key, mapping=sensor_data)
             
-            # 3. Lista con TTL para histórico reciente (Redis - General)
+            # 3. Lista con TTL para histórico reciente
             list_key = f'sensors:{sensor_type}:history'
             self.redis_client.lpush(list_key, json.dumps(sensor_data))
             self.redis_client.ltrim(list_key, 0, 999)  # Mantener últimos 1000
             
-            # 4. Almacenar datos específicos de MQTT
-            mqtt_stream_key = f'sensors:{sensor_type}:mqtt:stream'
-            mqtt_latest_key = f'sensors:{sensor_type}:mqtt:latest'
-            self.redis_client.xadd(mqtt_stream_key, mqtt_data)
-            self.redis_client.hset(mqtt_latest_key, mapping=mqtt_data)
-            
-            # 5. Publicar en MQTT
-            mqtt_topic = f'sensors/{sensor_type}'
-            self.mqtt_client.publish(mqtt_topic, json.dumps(mqtt_data))
-            
-            # 6. Alertas si valores están fuera de rango
+            # 4. Alertas si valores están fuera de rango
             self.check_alerts(sensor_type, value, sensor_data)
 
     def check_alerts(self, sensor_type, value, sensor_data):
@@ -178,45 +136,31 @@ class IoTSensorSimulator:
                 }
             
             if alert_data:
-                # Enviar alerta a Redis
                 self.redis_client.xadd('alerts:stream', alert_data)
-                
-                # Enviar alerta a MQTT
-                self.mqtt_client.publish('alerts', json.dumps(alert_data))
-                
-                print(f"ALERTA: {alert_data['message']}")
+                print(f"* ALERTA: {alert_data['message']}")
 
     def run_simulation(self, interval=2):
         """Ejecuta la simulación continuamente"""
-        print(f"Iniciando simulación (intervalo: {interval}s)")
-        print("Presiona Ctrl+C para detener")
+        print(f"- Iniciando simulación (intervalo: {interval}s)")
+        print("- Presiona Ctrl+C para detener")
         
         try:
             while True:
                 self.send_sensor_data()
                 
+                # Mostrar último estado
                 current_time = datetime.now().strftime('%H:%M:%S')
-                # Mostrar datos generales
                 temp = self.redis_client.hget('sensors:temperature:latest', 'value')
                 humidity = self.redis_client.hget('sensors:humidity:latest', 'value')
                 light = self.redis_client.hget('sensors:light:latest', 'value')
                 
-                # Mostrar datos MQTT
-                temp_mqtt = self.redis_client.hget('sensors:temperature:mqtt:latest', 'value') or '0'
-                
-                print(f"[{current_time}]  * {temp}°C | * {humidity}% | * {light}lux")
-                print(f"[{current_time}]  * Temp MQTT: {temp_mqtt}°C")
+                print(f"[{current_time}] 🌡️ {temp}°C | 💧 {humidity}% | ☀️ {light}lux")
                 
                 time.sleep(interval)
                 
         except KeyboardInterrupt:
-            print("\nSimulación detenida")
-            self.mqtt_client.loop_stop()
-            self.mqtt_client.disconnect()
-
+            print("\n- Simulación detenida")
 
 if __name__ == "__main__":
     simulator = IoTSensorSimulator()
-    
-    # Iniciar simulación
-    simulator.run_simulation(interval=7)  # Enviar datos cada n segundos
+    simulator.run_simulation(interval=7)
