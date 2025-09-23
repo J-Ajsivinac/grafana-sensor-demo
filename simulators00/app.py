@@ -29,8 +29,8 @@ class IoTSensorSimulator:
             'battery_level': 85
         }
         
-        print("✅ Simulador de sensores IoT iniciado")
-        print("📡 Conectado a Redis en localhost:6379")
+        print("Simulador de sensores IoT iniciado")
+        print("Conectado a Redis en localhost:6379")
 
     def generate_realistic_value(self, sensor_type, timestamp):
         """Genera valores realistas que simulan patrones del mundo real"""
