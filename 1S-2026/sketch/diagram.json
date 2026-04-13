@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "author": "Anonymous maker",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "wokwi-breadboard-half", "id": "bb1", "top": -339, "left": -74, "attrs": {} },
+    { "type": "wokwi-arduino-uno", "id": "uno", "top": -85.8, "left": -48.6, "attrs": {} },
+    { "type": "wokwi-potentiometer", "id": "pot1", "top": -318.1, "left": 307, "attrs": {} },
+    { "type": "wokwi-gas-sensor", "id": "gas1", "top": -122.1, "left": 275.8, "attrs": {} },
+    { "type": "wokwi-hc-sr04", "id": "ultrasonic1", "top": -267.3, "left": -263.3, "attrs": {} },
+    { "type": "wokwi-dht22", "id": "dht1", "top": -47.7, "left": -197.4, "attrs": {} }
+  ],
+  "connections": [
+    [ "uno:GND.1", "bb1:bn.12", "black", [ "v0" ] ],
+    [ "uno:5V", "bb1:bp.24", "red", [ "v19.1", "h119" ] ],
+    [ "bb1:bn.25", "bb1:tn.25", "green", [ "v-1.3", "h30.4", "v-172.8" ] ],
+    [ "bb1:tp.25", "bb1:bp.25", "green", [ "v0.3", "h40", "v172.8" ] ],
+    [ "ultrasonic1:VCC", "bb1:bp.1", "red", [ "v19.2" ] ],
+    [ "ultrasonic1:GND", "bb1:bn.1", "black", [ "v28.8", "h-1.2" ] ],
+    [ "ultrasonic1:TRIG", "uno:9", "green", [ "v57.6", "h297.2" ] ],
+    [ "ultrasonic1:ECHO", "uno:10", "green", [ "v67.2", "h277.6", "v28.8" ] ],
+    [ "gas1:VCC", "bb1:bp.23", "red", [ "h0", "v18.3", "h-182.4", "v-67.2", "h-19.2" ] ],
+    [ "gas1:GND", "bb1:bn.24", "black", [ "h19.2", "v37.6", "h-211.2" ] ],
+    [ "gas1:AOUT", "uno:A0", "green", [ "h38.4", "v230.4", "h-291.8" ] ],
+    [ "gas1:DOUT", "uno:2", "green", [ "h28.8", "v-29.1", "h-249.6" ] ],
+    [ "pot1:VCC", "bb1:tp.24", "red", [ "v19.2", "h37.6", "v-96", "h0", "v-28.8", "h-172.8" ] ],
+    [ "pot1:GND", "bb1:tn.23", "black", [ "v28.8", "h67.2", "v-144", "h-192" ] ],
+    [ "pot1:SIG", "uno:A1", "green", [ "v115.2", "h134", "v278.4", "h-316.8" ] ],
+    [ "dht1:VCC", "bb1:bp.3", "red", [ "v0", "h-28.8", "v-192", "h192" ] ],
+    [ "dht1:GND", "bb1:bn.4", "black", [ "v0", "h19.2", "v-163.2", "h124.8" ] ],
+    [ "dht1:SDA", "uno:4", "green", [ "v19.2", "h115.3", "v-182.4", "h230.4" ] ]
+  ],
+  "dependencies": {}
+}
