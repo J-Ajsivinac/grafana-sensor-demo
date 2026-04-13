@@ -37,17 +37,6 @@ DEVICE_ID = 'arduno_wokwi_001'
 
 # ── Parser de línea serial ────────────────────────────────────────────────────
 def parse_line(line: str):
-    """
-    Parsea líneas con formato  SENSOR:campo=valor,campo=valor
-    Retorna (sensor_name, dict_de_campos) o (None, None) si no matchea.
-
-    Ejemplos válidos:
-        HC_SR04:distancia=23.4
-        MQ_GAS:raw=512,alarma=0
-        POT:raw=300,voltaje=1.46
-        DHT22:temperatura=25.3,humedad=60.1
-        DHT22:error=1          ← se ignora (no hay valor numérico útil)
-    """
     if ':' not in line:
         return None, None
 
