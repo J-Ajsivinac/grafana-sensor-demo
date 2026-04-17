@@ -1,0 +1,19 @@
+apiVersion: 1
+
+deleteDatasources:
+  - name: Redis
+    orgId: 1
+
+datasources:
+  - name: Redis
+    uid: redis-datasource
+    type: redis-datasource
+    access: proxy
+    url: redis://iot_redis:6379
+    isDefault: true
+    editable: true
+    jsonData:
+      poolSize: 5
+      timeout: 10
+      pingInterval: 0
+      pipelineWindow: 0

@@ -9,6 +9,10 @@
 #define MQ_AOUT     A0
 #define MQ_DOUT     2
 
+// Umbrales con histeresis para alarma de gas (raw ADC 0-1023)
+#define MQ_RAW_ALARM_ON   500
+#define MQ_RAW_ALARM_OFF  300
+
 // ── Pin Potenciómetro ─────────────────────
 #define POT_PIN     A1
 
@@ -17,6 +21,8 @@
 #define DHT_TYPE    DHT22
 
 DHT dht(DHT_PIN, DHT_TYPE);
+
+bool mqAlarmState = false;
 
 // ─────────────────────────────────────────
 void setup() {
@@ -52,7 +58,15 @@ void loop() {
 
   // ── Sensor MQ ────────────────────────────
   int  mq_raw    = analogRead(MQ_AOUT);
-  bool mq_alarma = digitalRead(MQ_DOUT) == HIGH;
+
+  // Alarma basada en raw con histeresis para evitar estados pegados.
+  if (mq_raw >= MQ_RAW_ALARM_ON) {
+    mqAlarmState = true;
+  } else if (mq_raw <= MQ_RAW_ALARM_OFF) {
+    mqAlarmState = false;
+  }
+
+  bool mq_alarma = mqAlarmState;
   Serial.print("MQ_GAS:raw=");
   Serial.print(mq_raw);
   Serial.print(",alarma=");

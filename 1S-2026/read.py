@@ -33,7 +33,12 @@ SENSOR_META = {
     }
 }
 
-DEVICE_ID = 'arduno_wokwi_001'
+DEVICE_ID = 'arduino_wokwi_001'
+
+# Histeresis para estabilizar la alarma MQ con valor raw (ADC 0-1023).
+MQ_ALARM_RAW_ON = 500.0
+MQ_ALARM_RAW_OFF = 300.0
+MQ_ALARM_STATE = 0.0
 
 # ── Parser de línea serial ────────────────────────────────────────────────────
 def parse_line(line: str):
@@ -62,8 +67,29 @@ def parse_line(line: str):
     return sensor_name, fields if fields else None
 
 
+def normalize_mq_alarm(fields: dict):
+    """Ajusta la alarma MQ usando raw + histeresis, independiente del pin DOUT."""
+    global MQ_ALARM_STATE
+
+    raw_value = fields.get('raw')
+    if raw_value is None:
+        return fields
+
+    if raw_value >= MQ_ALARM_RAW_ON:
+        MQ_ALARM_STATE = 1.0
+    elif raw_value <= MQ_ALARM_RAW_OFF:
+        MQ_ALARM_STATE = 0.0
+
+    fields['alarma'] = MQ_ALARM_STATE
+
+    return fields
+
+
 # ── Guardado en Redis ─────────────────────────────────────────────────────────
 def save_to_redis(sensor_name: str, fields: dict):
+    if sensor_name == 'MQ_GAS':
+        fields = normalize_mq_alarm(fields)
+
     timestamp     = datetime.now().isoformat()
     meta_fields   = SENSOR_META[sensor_name]['fields']
 
@@ -97,7 +123,7 @@ def save_to_redis(sensor_name: str, fields: dict):
         redis_client.lpush(list_key, json.dumps(sensor_data))
         redis_client.ltrim(list_key, 0, 999)
 
-        print(f"  ✓ [{sensor_name}] {field_name}={value} {meta['unit']}  →  Redis OK")
+        print(f"  OK [{sensor_name}] {field_name}={value} {meta['unit']}  ->  Redis OK")
 
 
 # ── Loop principal ────────────────────────────────────────────────────────────
@@ -107,8 +133,8 @@ def main():
         baudrate=9600,
         timeout=1
     )
-    print("✓ Conectado a Wokwi — leyendo simulación...")
-    print("✓ Redis conectado en localhost:6379\n")
+    print("Conectado a Wokwi -- leyendo simulacion...")
+    print("Redis conectado en localhost:6379\n")
 
     first_sensor_seen = None
     block_delimiter = 'HC_SR04'  # Sensor que marca el inicio de un nuevo bloque
@@ -131,7 +157,11 @@ def main():
         # if sensor_name and fields:
         #     save_to_redis(sensor_name, fields)
 
-    
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nLectura detenida por el usuario")
+    except Exception as e:
+        print(f"\nError: {e}")
