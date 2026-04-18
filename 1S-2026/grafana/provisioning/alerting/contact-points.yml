@@ -7,6 +7,6 @@ contactPoints:
       - uid: email-receiver-001
         type: email
         settings:
-          addresses: {{ .Values.email.addresses }}
+          addresses:  {{ .Values.email.addresses }}
           singleEmail: true
         disableResolveMessage: false
