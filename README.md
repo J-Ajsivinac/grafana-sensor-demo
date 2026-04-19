@@ -34,7 +34,7 @@ flowchart LR
 
 | Ruta | Perfil | Uso ideal |
 |---|---|---|
-| [1S-2026](1S-2026) | Versión lista para conferencia | Demo end-to-end con provisioning y alertas |
+| [1S-2026](1S-2026) | Versión mejorada | Demo end-to-end con provisioning y alertas |
 | [2S-2025](2S-2025) | Versión base/fundacional | Laboratorio de aprendizaje enfocado en protocolos |
 
 ## Qué incluye cada edición
